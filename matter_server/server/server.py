@@ -31,6 +31,7 @@ from ..common.models import (
 )
 from ..server.client_handler import WebsocketClientHandler
 from .const import (
+    DEFAULT_OTA_PROVIDER_DIR,
     DEFAULT_PAA_ROOT_CERTS_DIR,
     MIN_SCHEMA_VERSION,
 )
@@ -108,6 +109,7 @@ class MatterServer:
         listen_addresses: list[str] | None = None,
         primary_interface: str | None = None,
         paa_root_cert_dir: Path | None = None,
+        ota_provider_dir: Path | None = None,
     ) -> None:
         """Initialize the Matter Server."""
         self.storage_path = storage_path
@@ -120,6 +122,10 @@ class MatterServer:
             self.paa_root_cert_dir = DEFAULT_PAA_ROOT_CERTS_DIR
         else:
             self.paa_root_cert_dir = Path(paa_root_cert_dir).absolute()
+        if ota_provider_dir is None:
+            self.ota_provider_dir = DEFAULT_OTA_PROVIDER_DIR
+        else:
+            self.ota_provider_dir = Path(ota_provider_dir).absolute()
         self.logger = logging.getLogger(__name__)
         self.app = web.Application()
         self.loop: asyncio.AbstractEventLoop | None = None
@@ -156,7 +162,9 @@ class MatterServer:
 
         # Initialize our (intermediate) device controller which keeps track
         # of Matter devices and their subscriptions.
-        self._device_controller = MatterDeviceController(self, self.paa_root_cert_dir)
+        self._device_controller = MatterDeviceController(
+            self, self.paa_root_cert_dir, self.ota_provider_dir
+        )
         self._register_api_commands()
 
         await self._device_controller.initialize()

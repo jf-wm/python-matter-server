@@ -98,6 +98,12 @@ parser.add_argument(
     default=None,
     help="Directory where PAA root certificates are stored.",
 )
+parser.add_argument(
+    "--ota-provider-dir",
+    type=str,
+    default=None,
+    help="Directory where OTA Provider stores software updates and configuration.",
+)
 
 args = parser.parse_args()
 
@@ -181,6 +187,7 @@ def main() -> None:
         args.listen_address,
         args.primary_interface,
         args.paa_root_cert_dir,
+        args.ota_provider_dir,
     )
 
     async def handle_stop(loop: asyncio.AbstractEventLoop) -> None:
