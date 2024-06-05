@@ -42,6 +42,7 @@ from ..common.errors import (
     NodeNotReady,
     NodeNotResolving,
     UpdateCheckError,
+    UpdateError,
 )
 from ..common.helpers.api import api_command
 from ..common.helpers.json import JSON_DECODE_EXCEPTIONS, json_loads
@@ -140,6 +141,7 @@ class MatterDeviceController:
         self._wifi_credentials_set: bool = False
         self._thread_credentials_set: bool = False
         self._nodes_in_setup: set[int] = set()
+        self._nodes_in_ota: set[int] = set()
         self._node_last_seen: dict[int, float] = {}
         self._nodes: dict[int, MatterNodeData] = {}
         self._last_known_ip_addresses: dict[int, list[str]] = {}
@@ -934,6 +936,13 @@ class MatterDeviceController:
         )
 
         try:
+            if node_id in self._nodes_in_ota:
+                raise UpdateError(
+                    f"Node {node_id} is already in the process of updating."
+                )
+
+            self._nodes_in_ota.add(node_id)
+
             # Make sure any previous instances get stopped
             node_logger.info("Starting update using OTA Provider.")
             await ota_provider.start_update(
@@ -944,6 +953,7 @@ class MatterDeviceController:
             self._attribute_update_callbacks[node_id].remove(
                 ota_provider.check_update_state
             )
+            self._nodes_in_ota.remove(node_id)
 
         return update
 
